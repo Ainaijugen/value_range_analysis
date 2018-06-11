@@ -1,11 +1,27 @@
 class Block:
-    def __init__(self, string):
-        # _id,_pred,_succ,_stat,_IN,_OUT = ()
-        # self.id = _id       # block id, int
-        # self.pred = _pred     # pre list, a list of block id, int
-        # self.succ = _succ   # succ list, a list of block id, int
-        # self.stat = _stat   # statements, a list of statements, str
-        # self.IN = _IN       # IN, dictionary, dic[var] = (left,left_var,right,right_var)
-        # self.OUT = _OUT     # OUT，dictionary dic[var] = (left,left_var,right,right_var)
-        self.a = string
-
+    def __init__(self, list):
+        list = list.splitlines()
+        self.stat = []
+        if list[0][0] != '<':
+            self.id = '<bb 1>'
+            list[0] = list[0][list[0].find('(') + 1:list[0].find(')')]
+            list[0] = list[0].split(',')
+            for s in list[0]:
+                self.stat.append(s)
+            for line in list[1:]:
+                if line[0] != '{':
+                    self.stat.append(line[:line.find(';')])
+        else:
+            self.id = list[0][:list[0].find(':')]
+            for line in list[1:]:
+                if line[0] != '}':
+                    if line[-1] == ';':
+                        self.stat.append(line[:-1])
+                    else:
+                        self.stat.append(line)
+        
+        print(self.id, self.stat)
+        self.pred = []
+        self.succ = []
+        self.IN = {}
+        self.OUT = {}
