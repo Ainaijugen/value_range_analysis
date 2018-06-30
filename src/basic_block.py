@@ -5,13 +5,6 @@ import math
 re_float = re.compile(r'^[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?$')
 re_int = re.compile(r'^[-+]?[0-9]+$')
 re_def = re.compile(r'^[a-zA-Z]*_[0-9]+$')
-re_op = re.compile(r'^[+\-*/=]$')
-
-INT_MIN = -2147483648
-INT_MAX = 2147483647
-FLOAT_MIN = -1212121  # need to redefine
-FLOAT_MAX = -12121212
-
 
 class Block:
     def __init__(self, List, _func_ref):
@@ -269,7 +262,6 @@ class Block:
                 self.try_to_add(self.func_ref.blocklist[true_label], true_OUT)
                 self.try_to_add(self.func_ref.blocklist[false_label], false_OUT)
                 return
-
             if line[0] == '#' and line[2] == '=':  # PHI
                 x = line[1]
                 y = line[4][1:line[4].find('(')]
@@ -301,6 +293,16 @@ class Block:
                     self.try_to_add(self.func_ref.blocklist[line[1] + ' ' + line[2]], self.OUT)
                     return
             if line[1] == '=':
+                if len(line) == 4: # x = (float) y
+                    x = line[0]
+                    y = line[3]
+                    y_value = self.valueof(y)
+                    if line[2] == '(float)':
+                        self.OUT[x] = y_value
+                    elif line[2] == '(int)':
+                        self.OUT[x] = self.cast_float_to_int(y_value)
+                    else:
+                        raise TypeError('cannot do force convert %s',line[2])
                 if len(line) == 3:  # x = y
                     x = line[0]
                     y = line[2]
