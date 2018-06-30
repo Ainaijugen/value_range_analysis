@@ -53,9 +53,13 @@ class Function:
             print(self.blocklist[bb].id, self.blocklist[bb].pred, self.blocklist[bb].succ)
 
     def start(self):
-        self.queue.put('<bb 1>')
+        self.queue.put(('<bb 1>','<bb 0>'))
         self.in_queue.add('<bb 1>')
+        cnt = 0
         while not self.queue.empty():
-            block = self.queue.get()
+            block,pred_id = self.queue.get()
             self.in_queue.remove(block)
-            self.blocklist[block].in_to_out()
+            self.blocklist[block].in_to_out(pred_id)
+            # cnt += 1
+            # if cnt == 1000:
+            #     break

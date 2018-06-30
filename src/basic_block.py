@@ -4,7 +4,7 @@ import math
 
 re_float = re.compile(r'^[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?$')
 re_int = re.compile(r'^[-+]?[0-9]+$')
-re_def = re.compile(r'^[a-zA-Z]?_[0-9]+$')
+re_def = re.compile(r'^[a-zA-Z]*_[0-9]+$')
 re_op = re.compile(r'^[+\-*/=]$')
 
 INT_MIN = -2147483648
@@ -124,6 +124,7 @@ class Block:
             else:
                 ans[3] = a[3]
                 ans[1] = a[1] & b[1]
+        # print("inter",a,b,tuple(ans))
         return tuple(ans)
 
     def cast_float_to_int(self, range):
@@ -158,7 +159,8 @@ class Block:
         flag = False
         for x in self.IN:
             if x in pred_out:
-                tmp = self.union(self.IN[x], pred_out[x])
+                # tmp = self.union(self.IN[x], pred_out[x])
+                tmp = pred_out[x]
                 if tmp != self.IN[x]:
                     flag = True
                     self.IN[x] = tmp
@@ -204,10 +206,10 @@ class Block:
         if next_block.merge_in(OUT) == True or not next_block.is_visited:
             if next_block.id not in self.func_ref.in_queue:
                 print("Add ", next_block.id)
-                self.func_ref.queue.put(next_block.id)
+                self.func_ref.queue.put((next_block.id, self.id))
                 self.func_ref.in_queue.add(next_block.id)
 
-    def in_to_out(self):
+    def in_to_out(self, pred_id):
         print("Processing: ", self.id)
         self.OUT = copy.copy(self.IN)
         self.is_visited = True
@@ -239,6 +241,10 @@ class Block:
                         OUT[y] = y_value
                     if OUT[x] is None or OUT[y] is None:
                         return None
+                    if self.typeof(x) == "int":
+                        OUT[x] = self.cast_float_to_int(OUT[x])
+                    if self.typeof(y) == "int":
+                        OUT[y] = self.cast_float_to_int(OUT[y])
                     return OUT
 
                 if op == '<':
@@ -251,8 +257,8 @@ class Block:
                     true_OUT = cal_out("<", copy.copy(self.OUT), y, x, y_value, x_value)
                     false_OUT = cal_out(">=", copy.copy(self.OUT), y, x, y_value, x_value)
                 elif op == '>=':
-                    true_OUT = cal_out("<", copy.copy(self.OUT), y, x, y_value, x_value)
-                    false_OUT = cal_out(">=", copy.copy(self.OUT), y, x, y_value, x_value)
+                    true_OUT = cal_out(">=", copy.copy(self.OUT), x, y, x_value, y_value)
+                    false_OUT = cal_out("<", copy.copy(self.OUT), x, y, x_value, y_value)
                 elif op == '==':
                     true_OUT = cal_out("==", copy.copy(self.OUT), x, y, x_value, y_value)
                     false_OUT = cal_out("!=", copy.copy(self.OUT), x, y, x_value, y_value)
@@ -267,10 +273,19 @@ class Block:
             if line[0] == '#' and line[2] == '=':  # PHI
                 x = line[1]
                 y = line[4][1:line[4].find('(')]
-                z = line[5][1:line[5].find('(')]
-                y_value = self.valueof(y)
+                y_from = '<bb ' + line[4][line[4].find('(') + 1: line[4].find(')')] + '>'
+                z = line[5][0:line[5].find('(')]
+                z_from = '<bb ' + line[5][line[5].find('(') + 1: line[5].find(')')] + '>'
+                # TODO (D)
+                if y_from == pred_id:
+                    new_tuple = self.valueof(y)
+                elif z_from == pred_id:
+                    new_tuple = self.valueof(z)
+                else:
+                    raise ValueError("Cannot determine y: %s, z: %s, pred_id: %s" % (y_from, z_from, pred_id))
                 z_value = self.valueof(z)
-                new_tuple = self.union(y_value, z_value)
+                # new_tuple = self.union(y_value, z_value)
+
                 if self.TYPE[x if x[0] == '_' or x.find("_") == -1 else x[:x.find("_")]] == 'int':
                     self.OUT[x] = self.cast_float_to_int(new_tuple)
                 else:

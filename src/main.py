@@ -9,7 +9,7 @@ def prepare(filename):
     return data
 
 def main():
-    data = prepare('../project/benchmark/t1.ssa')
+    data = prepare('../project/benchmark/t10.ssa')
     func_list = {}
     for func in data:
         func_obj = Function(func)
