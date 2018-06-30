@@ -1,7 +1,10 @@
-from block import Block
-
+from src.basic_block import Block
+from queue import Queue
 class Function:
+
     def __init__(self, List):
+        self.queue = Queue()
+        self.in_queue = set()
         List = List.splitlines()
         tmp_list = []
         for line in List:
@@ -14,21 +17,25 @@ class Function:
         List = '\n'.join(tmp_list)
         
         self.name = List[:List.find('(') - 1]
-        print('Function: ' + self.name + ' detected, Creating basic blocks:')
+        # print('Function: ' + self.name + ' detected, Creating basic blocks:')
         
         List = List.split('@@')
         self.blocklist = {}
         for blocks in List:
-            block_obj = Block(blocks)
+            block_obj = Block(blocks, self)
             self.blocklist[block_obj.id] = block_obj
 
         #Analysis of pred and succ
-        print('Basic blocks created, analyze pred and succ:')
+        # print('Basic blocks created, analyze pred and succ:')
         for bb in self.blocklist:
             for stats in self.blocklist[bb].stat:
                 if stats[0:4] == 'goto':
-                    self.blocklist[bb].succ.append(stats[5:])
-                    self.blocklist[stats[5:]].pred.append(self.blocklist[bb].id)
+                    if stats.find('(') == -1:
+                        self.blocklist[bb].succ.append(stats[5:])
+                        self.blocklist[stats[5:]].pred.append(self.blocklist[bb].id)
+                    else:
+                        self.blocklist[bb].succ.append(stats[5:stats.find('>')+1])
+                        self.blocklist[stats[5:stats.find('>')+1]].pred.append(self.blocklist[bb].id)
             for i in range(len(List)):
                 if i == 0:
                     self.blocklist['<bb 1>'].succ.append(self.blocklist[List[1][:List[1].find('>') + 1]].id)
@@ -45,5 +52,10 @@ class Function:
             self.blocklist[bb].succ = list(set(self.blocklist[bb].succ))
             print(self.blocklist[bb].id, self.blocklist[bb].pred, self.blocklist[bb].succ)
 
-    def calculate(self, _IN):
-        return
+    def start(self):
+        self.queue.put('<bb 1>')
+        self.in_queue.add('<bb 1>')
+        while not self.queue.empty():
+            block = self.queue.get()
+            self.in_queue.remove(block)
+            self.blocklist[block].in_to_out()
