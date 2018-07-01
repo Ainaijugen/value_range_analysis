@@ -1,5 +1,7 @@
 from src.basic_block import Block
 from queue import Queue
+
+
 class Function:
 
     def __init__(self, List):
@@ -17,7 +19,7 @@ class Function:
         List = '\n'.join(tmp_list)
         
         self.name = List[:List.find('(') - 1]
-        # print('Function: ' + self.name + ' detected, Creating basic blocks:')
+        print('Function: ' + self.name + ' detected, Creating basic blocks:')
         
         List = List.split('@@')
         self.blocklist = {}
@@ -25,8 +27,8 @@ class Function:
             block_obj = Block(blocks, self)
             self.blocklist[block_obj.id] = block_obj
 
-        #Analysis of pred and succ
-        # print('Basic blocks created, analyze pred and succ:')
+        # Analysis of pred and succ
+        print('Basic blocks created, analyze pred and succ:')
         for bb in self.blocklist:
             for stats in self.blocklist[bb].stat:
                 if stats[0:4] == 'goto':
@@ -53,11 +55,11 @@ class Function:
             print(self.blocklist[bb].id, self.blocklist[bb].pred, self.blocklist[bb].succ)
 
     def start(self):
-        self.queue.put(('<bb 1>','<bb 0>'))
+        self.queue.put(('<bb 1>', '<bb 0>'))
         self.in_queue.add('<bb 1>')
         cnt = 0
         while not self.queue.empty():
-            block,pred_id = self.queue.get()
+            block, pred_id = self.queue.get()
             self.in_queue.remove(block)
             self.blocklist[block].in_to_out(pred_id)
             # cnt += 1

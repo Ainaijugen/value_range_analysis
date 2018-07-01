@@ -6,6 +6,7 @@ re_float = re.compile(r'^[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?$')
 re_int = re.compile(r'^[-+]?[0-9]+$')
 re_def = re.compile(r'^[a-zA-Z]*_[0-9]+$')
 
+
 class Block:
     def __init__(self, List, _func_ref):
         List = List.splitlines()
