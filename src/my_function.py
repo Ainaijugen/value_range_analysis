@@ -31,24 +31,23 @@ class Function:
         print('Basic blocks created, analyze pred and succ:')
         for bb in self.blocklist:
             for stats in self.blocklist[bb].stat:
-                if stats[0:4] == 'goto':
-                    if stats.find('(') == -1:
-                        self.blocklist[bb].succ.append(stats[5:])
-                        self.blocklist[stats[5:]].pred.append(self.blocklist[bb].id)
-                    else:
-                        self.blocklist[bb].succ.append(stats[5:stats.find('>')+1])
-                        self.blocklist[stats[5:stats.find('>')+1]].pred.append(self.blocklist[bb].id)
-            for i in range(len(List)):
-                if i == 0:
-                    self.blocklist['<bb 1>'].succ.append(self.blocklist[List[1][:List[1].find('>') + 1]].id)
-                elif List[i][:List[i].find('>') + 1] == self.blocklist[bb].id:
-                    if i + 1 < len(List):
-                        self.blocklist[bb].succ.append(self.blocklist[List[i + 1][:List[i + 1].find('>') + 1]].id)
-                    if i - 1 > 0:
-                        self.blocklist[bb].pred.append(self.blocklist[List[i - 1][:List[i - 1].find('>') + 1]].id)
-                    if i == 1:
-                        self.blocklist[bb].pred.append('<bb 1>')
-
+                if stats.find('goto ') != -1:
+                    tmp_s = stats + ';'
+                    while tmp_s.find('goto ') != -1:
+                        self.blocklist[bb].succ.append(tmp_s[tmp_s.find('goto ') + 5:tmp_s.find(';')])
+                        self.blocklist[tmp_s[tmp_s.find('goto ') + 5:tmp_s.find(';')]].pred.append(self.blocklist[bb].id)
+                        tmp_s = tmp_s[tmp_s.find(';') + 1:]
+            if self.blocklist[bb].stat[len(self.blocklist[bb].stat) - 1].find('goto') == -1:
+                for i in range(len(List)):
+                    if i == 0:
+                        self.blocklist['<bb 1>'].succ.append(List[i + 1][:List[i + 1].find('>') + 1])
+                    if List[i][:List[i].find('>') + 1] == self.blocklist[bb].id:
+                        if i + 1 < len(List):
+                            self.blocklist[bb].succ.append(self.blocklist[List[i + 1][:List[i + 1].find('>') + 1]].id)
+                            self.blocklist[List[i + 1][:List[i + 1].find('>') + 1]].pred.append(self.blocklist[bb].id)
+        self.blocklist['<bb 1>'].succ.append(List[1][:List[1].find('>') + 1])
+        self.blocklist[List[1][:List[1].find('>') + 1]].pred.append('<bb 1>')
+        # Unique
         for bb in self.blocklist:
             self.blocklist[bb].pred = list(set(self.blocklist[bb].pred))
             self.blocklist[bb].succ = list(set(self.blocklist[bb].succ))

@@ -25,7 +25,7 @@ def read_range(input_variables):
     else:
         for i in range(n):
             print('Please enter information about variable {}'.format(input_variables[i][1]))
-            print('(Please notice that -inf/inf mach [/])')
+            print('(Please notice that -inf/inf match [/])')
             left = input('Please enter lower bound open/closed with [ = 1, ( = 0:')
             right = input('Please enter upper bound open/closed with ] = 1, ) = 0:')
             lower = input('Please enter lower bound:')
@@ -55,9 +55,12 @@ def main():
     for func in data:
         func_obj = Function(func)
         func_list[func_obj.name] = func_obj
+    '''
     print(func_list)
     func_list['foo'].start()
     for x in func_list['foo'].blocklist:
         print(x, func_list['foo'].blocklist[x].IN)
+    '''
+
 
 main()
