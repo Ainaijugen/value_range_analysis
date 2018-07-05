@@ -93,7 +93,7 @@ class Function:
                 block = self.queue.get()
                 cnt[block] += 1
                 self.in_queue.remove(block)
-                if cnt[block] >= 1000:
+                if cnt[block] >= 10000:
                     for x in self.blocklist[block].less:
                         a, b, c, d = self.blocklist[block].IN[x]
                         self.blocklist[block].IN[x] = (1, b, float('-inf'), d)

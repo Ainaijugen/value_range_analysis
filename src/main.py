@@ -48,7 +48,7 @@ def read_range(input_variables):
         return value_range
 
 def main():
-    data, input_variables = prepare('../project/benchmark/t3.ssa')
+    data, input_variables = prepare('../project/benchmark/t9.ssa')
     func_list = {}
     for func in data:
         func_obj = Function(func)

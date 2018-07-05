@@ -4,7 +4,7 @@ import math
 
 re_float = re.compile(r'^[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?$')
 re_int = re.compile(r'^[-+]?[0-9]+$')
-re_def = re.compile(r'^[a-zA-Z]*_[0-9]+$')
+re_def = re.compile(r'^([a-zA-Z@]*)[0-9]*_[0-9]+$')
 
 
 class Block:
@@ -61,6 +61,7 @@ class Block:
         self.less = set()
 
     def valueof(self, x):
+        print(x)
         if x[-3:] == "(D)":
             x = x[:-3]
             if x not in self.OUT:
@@ -74,10 +75,15 @@ class Block:
                 # self.OUT[x] = (1, 1, float('-inf'), float('inf'))
                 return None
             return self.OUT[x]
-
+        if x[0] == '_' and x.find('@')!=-1:
+            if x not in self.OUT:
+                # self.OUT[x] = (1, 1, float('-inf'), float('inf'))
+                return None
+            return self.OUT[x]
         raise ValueError("Cannot handle %s!" % x)
 
     def typeof(self, x):
+
         if re_int.search(x) is not None:
             return 'int'
         if re_float.search(x) is not None:
@@ -132,30 +138,39 @@ class Block:
         # print("inter_ans",a,b,tuple(ans))
         return tuple(ans)
 
-    def cast_float_to_int(self, range):
-        if range is None:
+    def cast_float_to_int(self, ran):
+        if ran is None:
             return None
         ans = [1] * 4
-        if range[0] == 0:
-            if math.isinf(range[2]):
-                ans[2] = range[2]
+        ran = list(ran)
+        if ran[2] != float('inf') and ran[2] != float('-inf') and ran[3] != float('inf') and ran[3] != float('-inf'):
+            candi_min = [math.floor(ran[2]),math.ceil(ran[2])]
+            candi_max = [math.floor(ran[3]),math.ceil(ran[3])]
+            for i in range(2):
+                if 0.0000000000001< math.fabs(ran[2]-candi_min[i]) < 0.0001:
+                    ran[2] = candi_min[i]
+                if 0.0000000000001<math.fabs(ran[3]-candi_max[i]) < 0.0001:
+                    ran[3] = candi_max[i]
+        if ran[0] == 0:
+            if math.isinf(ran[2]):
+                ans[2] = ran[2]
             else:
-                ans[2] = int(range[2]) + 1
+                ans[2] = int(ran[2]) + 1
         else:
-            if math.isinf(range[2]):
-                ans[2] = range[2]
+            if math.isinf(ran[2]):
+                ans[2] = ran[2]
             else:
-                ans[2] = math.ceil(range[2])
-        if range[1] == 0:
-            if math.isinf(range[3]):
-                ans[3] = range[3]
+                ans[2] = math.ceil(ran[2])
+        if ran[1] == 0:
+            if math.isinf(ran[3]):
+                ans[3] = ran[3]
             else:
-                ans[3] = math.ceil(range[3]) - 1
+                ans[3] = math.ceil(ran[3]) - 1
         else:
-            if math.isinf(range[3]):
-                ans[3] = range[3]
+            if math.isinf(ran[3]):
+                ans[3] = ran[3]
             else:
-                ans[3] = math.floor(range[3])
+                ans[3] = math.floor(ran[3])
         return tuple(ans)
 
     def merge_in(self, pred_out, type):

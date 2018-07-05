@@ -3,9 +3,9 @@ import random
 
 re_float = re.compile(r'^[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?$')
 re_int = re.compile(r'^[-+]?[0-9]+$')
-re_def = re.compile(r'^[a-zA-Z]?_[0-9]+$')
+re_def = re.compile(r'^([a-zA-Z@0-9]*)_[0-9]+$')
 re_op = re.compile(r'^[+\-*/=]$')
-string = '2'
+string = 'i@1_3'
 
 result = re_float.search(string)
 print(result)
@@ -67,7 +67,8 @@ def intersection(a, b):
             ans[1] = a[1] & b[1]
     return tuple(ans)
 
-
-b = (1, 1, 1, 5)
-a = (0, 0, -1, 1)
-print(intersection(a, b))
+a = 2.5
+b = -2.5
+a = int(a)
+b = int(b)
+print(a,b)
