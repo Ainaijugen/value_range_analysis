@@ -8,6 +8,7 @@ from queue import Queue
 #     def add_edge(self,x,y,dep):
 #         if x in self.edges
 
+
 class Function:
 
     def __init__(self, List):
@@ -55,12 +56,13 @@ class Function:
                             self.blocklist[List[i + 1][:List[i + 1].find('>') + 1]].pred.append(self.blocklist[bb].id)
         self.blocklist['<bb 1>'].succ.append(List[1][:List[1].find('>') + 1])
         self.blocklist[List[1][:List[1].find('>') + 1]].pred.append('<bb 1>')
+        
         # Unique
-
         for bb in self.blocklist:
             self.blocklist[bb].pred = list(set(self.blocklist[bb].pred))
             self.blocklist[bb].succ = list(set(self.blocklist[bb].succ))
             print(self.blocklist[bb].id, self.blocklist[bb].pred, self.blocklist[bb].succ)
+
 
     def start(self):
         # self.graph = Graph()
@@ -116,4 +118,3 @@ class Function:
                 self.blocklist[block].in_to_out("F")
             for x in self.blocklist:
                 print(x, self.blocklist[x].IN)
-

@@ -67,5 +67,3 @@ foo (int i)
   return _7;
 
 }
-
-

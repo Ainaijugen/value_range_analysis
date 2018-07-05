@@ -47,18 +47,17 @@ def read_range(input_variables):
         print(value_range)
         return value_range
 
+
 def main():
     data, input_variables = prepare('../project/benchmark/t9.ssa')
     func_list = {}
     for func in data:
         func_obj = Function(func)
         func_list[func_obj.name] = func_obj
-
     print(func_list)
-    func_list['foo'].inputs = read_range(input_variables)
-    func_list['foo'].start()
 
-
+    #func_list['foo'].inputs = read_range(input_variables)
+    #func_list['foo'].start()
 
 
 main()
