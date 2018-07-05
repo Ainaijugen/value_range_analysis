@@ -6,6 +6,7 @@ re_float = re.compile(r'^[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?$')
 re_int = re.compile(r'^[-+]?[0-9]+$')
 re_def = re.compile(r'^[a-zA-Z]*_[0-9]+$')
 
+
 class Block:
     def __init__(self, List, _func_ref):
         List = List.splitlines()
@@ -13,6 +14,7 @@ class Block:
         self.stat = []
         self.func_ref = _func_ref
         self.is_visited = False
+        self.live_is_visited = False
         if List[0][0] != '<':
             self.id = '<bb 1>'  # the f
             List[0] = List[0][List[0].find('(') + 1:List[0].find(')')]
@@ -53,7 +55,16 @@ class Block:
 
         self.TYPE = {}
 
+        self.live_IN = set()
+        self.live_OUT = set()
+        self.greater = set()
+        self.less = set()
+
     def valueof(self, x):
+        if x[-3:] == "(D)":
+            x = x[:-3]
+            if x not in self.OUT:
+                self.OUT[x] = self.func_ref.inputs[x if x[0] == '_' or x.find("_") == -1 else x[:x.find("_")]]
         if re_int.search(x) is not None:
             return (1, 1, int(x), int(x))
         if re_float.search(x) is not None:
@@ -76,6 +87,7 @@ class Block:
         raise ValueError("Cannot handle %s!" % x)
 
     def intersection(self, a, b):
+        # print("inter", a, b)
         ans = [1] * 4
         if a[2] < b[2]:  # a[2] b[2]
             ans[0] = b[0]
@@ -117,7 +129,7 @@ class Block:
             else:
                 ans[3] = a[3]
                 ans[1] = a[1] & b[1]
-        # print("inter",a,b,tuple(ans))
+        # print("inter_ans",a,b,tuple(ans))
         return tuple(ans)
 
     def cast_float_to_int(self, range):
@@ -146,21 +158,32 @@ class Block:
                 ans[3] = math.floor(range[3])
         return tuple(ans)
 
-    def merge_in(self, pred_out):
+    def merge_in(self, pred_out, type):
         print(self.id, self.IN, pred_out)
         # merge self.IN and pred_out
         flag = False
         for x in self.IN:
             if x in pred_out:
-                # tmp = self.union(self.IN[x], pred_out[x])
-                tmp = pred_out[x]
+                # tmp = pred_out[x]
+                # if x not in self.live_OUT:
+                #     tmp = self.union(self.IN[x], pred_out[x])
+                if type == "W":
+                    tmp = self.union(self.IN[x], pred_out[x])
+                else:
+                    tmp = pred_out[x]
                 if tmp != self.IN[x]:
+                    if tmp[2] < self.IN[x][2]:
+                        self.less.add(x)
+                    if tmp[3] > self.IN[x][3]:
+                        self.greater.add(x)
                     flag = True
+                    print("change ", x)
                     self.IN[x] = tmp
         for x in pred_out:
             if x not in self.IN:
                 flag = True
                 self.IN[x] = pred_out[x]
+                print("change ", x)
         return flag
 
     def union(self, y_value, z_value):
@@ -192,20 +215,22 @@ class Block:
             ans[3] = z_value[3]
         return tuple(ans)
 
-    def try_to_add(self, next_block, OUT):
+    def try_to_add(self, next_block, OUT, type):
         if OUT is None:
             return
         next_block.TYPE = self.TYPE
-        if next_block.merge_in(OUT) == True or not next_block.is_visited:
+        if next_block.merge_in(OUT, type) == True or not next_block.is_visited:
             if next_block.id not in self.func_ref.in_queue:
                 print("Add ", next_block.id)
-                self.func_ref.queue.put((next_block.id, self.id))
+                self.func_ref.queue.put(next_block.id)
                 self.func_ref.in_queue.add(next_block.id)
 
-    def in_to_out(self, pred_id):
+    def in_to_out(self, type):
         print("Processing: ", self.id)
         self.OUT = copy.copy(self.IN)
         self.is_visited = True
+        self.greater = set()
+        self.less = set()
         for line in self.stat:
             line = line.split()
             if len(line) == 0:
@@ -240,43 +265,51 @@ class Block:
                         OUT[y] = self.cast_float_to_int(OUT[y])
                     return OUT
 
-                if op == '<':
-                    true_OUT = cal_out("<", copy.copy(self.OUT), x, y, x_value, y_value)
-                    false_OUT = cal_out(">=", copy.copy(self.OUT), x, y, x_value, y_value)
-                elif op == '<=':
-                    true_OUT = cal_out('>=', copy.copy(self.OUT), y, x, y_value, x_value)
-                    false_OUT = cal_out('<', copy.copy(self.OUT), y, x, y_value, x_value)
-                elif op == '>':
-                    true_OUT = cal_out("<", copy.copy(self.OUT), y, x, y_value, x_value)
-                    false_OUT = cal_out(">=", copy.copy(self.OUT), y, x, y_value, x_value)
-                elif op == '>=':
-                    true_OUT = cal_out(">=", copy.copy(self.OUT), x, y, x_value, y_value)
-                    false_OUT = cal_out("<", copy.copy(self.OUT), x, y, x_value, y_value)
-                elif op == '==':
-                    true_OUT = cal_out("==", copy.copy(self.OUT), x, y, x_value, y_value)
-                    false_OUT = cal_out("!=", copy.copy(self.OUT), x, y, x_value, y_value)
-                elif op == '!=':
-                    true_OUT = cal_out("!=", copy.copy(self.OUT), x, y, x_value, y_value)
-                    false_OUT = cal_out("==", copy.copy(self.OUT), x, y, x_value, y_value)
-                # true
-                self.try_to_add(self.func_ref.blocklist[true_label], true_OUT)
-                self.try_to_add(self.func_ref.blocklist[false_label], false_OUT)
+                if re_float.search(x) is None and re_float.search(y) is None and type == "W":
+                    true_OUT = copy.copy(self.OUT)
+                    false_OUT = copy.copy(self.OUT)
+                else:
+                    if op == '<':
+                        true_OUT = cal_out("<", copy.copy(self.OUT), x, y, x_value, y_value)
+                        false_OUT = cal_out(">=", copy.copy(self.OUT), x, y, x_value, y_value)
+                    elif op == '<=':
+                        true_OUT = cal_out('>=', copy.copy(self.OUT), y, x, y_value, x_value)
+                        false_OUT = cal_out('<', copy.copy(self.OUT), y, x, y_value, x_value)
+                    elif op == '>':
+                        true_OUT = cal_out("<", copy.copy(self.OUT), y, x, y_value, x_value)
+                        false_OUT = cal_out(">=", copy.copy(self.OUT), y, x, y_value, x_value)
+                    elif op == '>=':
+                        true_OUT = cal_out(">=", copy.copy(self.OUT), x, y, x_value, y_value)
+                        false_OUT = cal_out("<", copy.copy(self.OUT), x, y, x_value, y_value)
+                    elif op == '==':
+                        true_OUT = cal_out("==", copy.copy(self.OUT), x, y, x_value, y_value)
+                        false_OUT = cal_out("!=", copy.copy(self.OUT), x, y, x_value, y_value)
+                    elif op == '!=':
+                        true_OUT = cal_out("!=", copy.copy(self.OUT), x, y, x_value, y_value)
+                        false_OUT = cal_out("==", copy.copy(self.OUT), x, y, x_value, y_value)
+                self.try_to_add(self.func_ref.blocklist[true_label], true_OUT, type)
+                self.try_to_add(self.func_ref.blocklist[false_label], false_OUT, type)
                 return
             if line[0] == '#' and line[2] == '=':  # PHI
                 x = line[1]
                 y = line[4][1:line[4].find('(')]
-                y_from = '<bb ' + line[4][line[4].find('(') + 1: line[4].find(')')] + '>'
+                # y_from = '<bb ' + line[4][line[4].find('(') + 1: line[4].find(')')] + '>'
                 z = line[5][0:line[5].find('(')]
-                z_from = '<bb ' + line[5][line[5].find('(') + 1: line[5].find(')')] + '>'
-                # TODO (D)
-                if y_from == pred_id:
-                    new_tuple = self.valueof(y)
-                elif z_from == pred_id:
-                    new_tuple = self.valueof(z)
-                else:
-                    raise ValueError("Cannot determine y: %s, z: %s, pred_id: %s" % (y_from, z_from, pred_id))
+                # z_from = '<bb ' + line[5][line[5].find('(') + 1: line[5].find(')')] + '>'
+                # if y_from == pred_id:
+                #     new_tuple = self.valueof(y)
+                # elif z_from == pred_id:
+                #     new_tuple = self.valueof(z)
+                # else:
+                #     new_tuple = self.func_ref.inputs[x if x[0] == '_' or x.find("_") == -1 else x[:x.find("_")]]
+                #     # raise ValueError("Cannot determine y: %s, z: %s, pred_id: %s" % (y_from, z_from, pred_id))
+                if line[4][line[4].find('(') + 1] == 'D':
+                    y += "(D)"
+                if line[5][line[5].find('(') + 1] == 'D':
+                    z += "(D)"
+                y_value = self.valueof(y)
                 z_value = self.valueof(z)
-                # new_tuple = self.union(y_value, z_value)
+                new_tuple = self.union(y_value, z_value)
 
                 if self.TYPE[x if x[0] == '_' or x.find("_") == -1 else x[:x.find("_")]] == 'int':
                     self.OUT[x] = self.cast_float_to_int(new_tuple)
@@ -290,10 +323,10 @@ class Block:
                 continue
             if len(line) == 3:
                 if line[0] == 'goto':
-                    self.try_to_add(self.func_ref.blocklist[line[1] + ' ' + line[2]], self.OUT)
+                    self.try_to_add(self.func_ref.blocklist[line[1] + ' ' + line[2]], self.OUT, type)
                     return
             if line[1] == '=':
-                if len(line) == 4: # x = (float) y
+                if len(line) == 4:  # x = (float) y
                     x = line[0]
                     y = line[3]
                     y_value = self.valueof(y)
@@ -302,7 +335,7 @@ class Block:
                     elif line[2] == '(int)':
                         self.OUT[x] = self.cast_float_to_int(y_value)
                     else:
-                        raise TypeError('cannot do force convert %s',line[2])
+                        raise TypeError('cannot do force convert %s', line[2])
                 if len(line) == 3:  # x = y
                     x = line[0]
                     y = line[2]
@@ -326,6 +359,7 @@ class Block:
                     new_min = ''
                     new_max = ''
                     if op == '+':
+                        # print("op+",y_value,z_value)
                         new_par_left = y_value[0] & z_value[0]
                         new_par_right = y_value[1] & z_value[1]
                         new_min = y_value[2] + z_value[2]
@@ -340,8 +374,8 @@ class Block:
                             new_par_right = 0
                         else:
                             new_par_right = 1
-                        new_min = y_value[2] + z_value[3]
-                        new_max = y_value[3] + z_value[2]
+                        new_min = y_value[2] - z_value[3]
+                        new_max = y_value[3] - z_value[2]
 
                     elif op == '*':
                         new_max = y_value[2] * z_value[2]
@@ -391,4 +425,84 @@ class Block:
                         self.OUT[x] = new_tuple
                     continue
         if len(self.succ) != 0:
-            self.try_to_add(self.func_ref.blocklist[self.succ[0]], self.OUT)
+            self.try_to_add(self.func_ref.blocklist[self.succ[0]], self.OUT, type)
+
+    def live_try_to_add(self, pred_block, live_OUT):
+        flag = False
+        for x in live_OUT:
+            if x not in pred_block.live_IN:
+                pred_block.live_IN.add(x)
+                flag = True
+        if (flag or not pred_block.live_is_visited) and pred_block.id not in self.func_ref.in_queue:
+            self.func_ref.queue.put(pred_block.id)
+            self.func_ref.in_queue.add(pred_block.id)
+
+    def live_in_to_out(self):
+        print("Processing: ", self.id)
+        self.live_OUT = copy.copy(self.live_IN)
+        self.live_is_visited = True
+        for line in reversed(self.stat):
+            line = line.split()
+            if len(line) == 0:
+                continue
+            if len(line) == 11 and line[0] == 'if':
+                x = line[1][1:]
+                y = line[3][:-1]
+                if re_float.search(x) is None:
+                    self.live_OUT.add(x)
+                if re_float.search(y) is None:
+                    self.live_OUT.add(x)
+                continue
+            if line[0] == '#' and line[2] == '=':  # PHI
+                x = line[1]
+                y = line[4][1:line[4].find('(')]
+                y_from = '<bb ' + line[4][line[4].find('(') + 1: line[4].find(')')] + '>'
+                z = line[5][0:line[5].find('(')]
+                z_from = '<bb ' + line[5][line[5].find('(') + 1: line[5].find(')')] + '>'
+                if y_from != '<bb D>' and re_float.search(y) is None:
+                    self.live_OUT.add(y)
+                if z_from != '<bb D>' and re_float.search(z) is None:
+                    self.live_OUT.add(z)
+                if x in self.live_OUT:
+                    self.live_OUT.remove(x)
+                continue
+
+            if len(line) == 2:  # int i
+                if line[0] == "return":
+                    # self.live_OUT.add(line[1])
+                    pass
+                continue
+            if len(line) == 3:
+                if line[0] == 'goto':
+                    continue
+            if line[1] == '=':
+                if len(line) == 4:  # x = (float) y
+                    x = line[0]
+                    y = line[3]
+                    if re_float.search(y) is None:
+                        self.live_OUT.add(y)
+                    if x in self.live_OUT:
+                        self.live_OUT.remove(x)
+                    continue
+                if len(line) == 3:  # x = y
+                    x = line[0]
+                    y = line[2]
+                    if re_float.search(y) is None:
+                        self.live_OUT.add(y)
+                    if x in self.live_OUT:
+                        self.live_OUT.remove(x)
+                    continue
+
+                if len(line) == 5:  # x = y op z
+                    x = line[0]
+                    y = line[2]
+                    z = line[4]
+                    if re_float.search(y) is None:
+                        self.live_OUT.add(y)
+                    if re_float.search(z) is None:
+                        self.live_OUT.add(z)
+                    if x in self.live_OUT:
+                        self.live_OUT.remove(x)
+                    continue
+        for x in self.pred:
+            self.live_try_to_add(self.func_ref.blocklist[x], self.live_OUT)

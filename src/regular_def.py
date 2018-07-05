@@ -1,5 +1,6 @@
 import re
 import random
+
 re_float = re.compile(r'^[-+]?([0-9]+(\.[0-9]+)?|\.[0-9]+)([eE][-+]?[0-9]+)?$')
 re_int = re.compile(r'^[-+]?[0-9]+$')
 re_def = re.compile(r'^[a-zA-Z]?_[0-9]+$')
@@ -16,12 +17,15 @@ for i in range(len(string)):
 
 inf = float('inf')
 inf2 = float('inf')
-if inf == float('inf'): print('yes')
-else: print('no')
+if inf == float('inf'):
+    print('yes')
+else:
+    print('no')
 
-def intersection( a, b):
-    ans = [1]*4
-    if a[2] < b[2]: #a[2] b[2]
+
+def intersection(a, b):
+    ans = [1] * 4
+    if a[2] < b[2]:  # a[2] b[2]
         ans[0] = b[0]
         ans[2] = b[2]
         if a[3] < b[2] or (a[3] == b[2] and a[1] & b[0] == 0):
@@ -35,7 +39,7 @@ def intersection( a, b):
         else:
             ans[1] = a[1] & b[1]
             ans[3] = a[3]
-    elif a[2] > b[2]: #b[2] a[2]
+    elif a[2] > b[2]:  # b[2] a[2]
         ans[0] = a[0]
         ans[2] = a[2]
         if b[3] < a[2] or (b[3] == a[2] and b[1] & a[0] == 0):
@@ -63,6 +67,7 @@ def intersection( a, b):
             ans[1] = a[1] & b[1]
     return tuple(ans)
 
-b = (1,1,1,5)
-a = (0,0,-1,1)
-print(intersection(a,b))
+
+b = (1, 1, 1, 5)
+a = (0, 0, -1, 1)
+print(intersection(a, b))
