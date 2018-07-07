@@ -49,7 +49,7 @@ def read_range(input_variables):
 
 
 def main():
-    data, input_variables = prepare('../project/benchmark/t11.ssa')
+    data, input_variables = prepare('../project/benchmark/t7.ssa')
     func_list = {}
     for func in data:
         func_obj = Function(func)
@@ -134,6 +134,11 @@ def main():
                                 inline_code = inline_code.replace('return', func_list['foo'].blocklist[bb].stat[ii][:func_list['foo'].blocklist[bb].stat[ii].find('=') + 1].strip())
                                 # Inline and separate bb
                                 inline_func = inline_func.replace(func_list['foo'].blocklist[bb].stat[ii] + ';\n', inline_code)
+                                inline_func = inline_func.splitlines()
+                                for i in range(len(inline_func) - 1):
+                                    if inline_func[i].strip() != '' and inline_func[i].strip()[0] == '<' and inline_func[i + 1].strip()[0] == '<':
+                                        inline_func[i] = ''
+                                inline_func = '\n'.join(inline_func)
                                 '''
                                 print(func_list['foo'].blocklist[bb].stat[ii - 1][:func_list['foo'].blocklist[bb].stat[ii - 2].find(' ')])
                                 if ii == 0:
