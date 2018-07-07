@@ -1,4 +1,4 @@
-from src.my_function import Function
+from my_function import Function
 
 
 def prepare(filename):
@@ -49,7 +49,9 @@ def read_range(input_variables):
 
 
 def main():
-    data, input_variables = prepare('../project/benchmark/t10.ssa')
+    ssa_path = input("please input the ssa input path:")
+    # ssa_path = '../project/benchmark/t2.ssa'
+    data, input_variables = prepare(ssa_path)
     func_list = {}
     for func in data:
         func_obj = Function(func)

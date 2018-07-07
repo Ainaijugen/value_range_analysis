@@ -1,4 +1,4 @@
-from src.basic_block import Block
+from basic_block import Block
 from queue import Queue
 
 
@@ -15,6 +15,7 @@ class Function:
         self.queue = Queue()
         self.in_queue = set()
         self.inputs = []
+        self.returnname = ''
         List = List.splitlines()
         tmp_list = []
         for line in List:
@@ -107,7 +108,7 @@ class Function:
             for x in self.blocklist:
                 print(x, self.blocklist[x].IN)
 
-            print("Future  Resoltion ...")
+            print("Future Resolution")
             for x in self.blocklist:
                 self.blocklist[x].is_visited = False
             self.queue.put('<bb 1>')
@@ -117,5 +118,5 @@ class Function:
                 cnt[block] += 1
                 self.in_queue.remove(block)
                 self.blocklist[block].in_to_out("F")
-            for x in self.blocklist:
-                print(x, self.blocklist[x].IN)
+            # for x in self.blocklist:
+            #     print(x, self.blocklist[x].IN)

@@ -250,6 +250,11 @@ class Block:
             line = line.split()
             if len(line) == 0:
                 continue
+            if 'return' in line:
+                self.func_ref.returnname = line[1]
+                print('\n')
+                print('finish analysing, the answer is: ')
+                print('return range = [',self.OUT[line[1]][2],',',self.OUT[line[1]][3],']')
             if len(line) == 11 and line[0] == 'if':
                 op = line[2]
                 x = line[1][1:]
