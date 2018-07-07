@@ -17,6 +17,8 @@ Use the following command to run the range analysis. main.py is in the src file.
 	
 Then follow the instrucion printed on the screen. 
 
+\* it may takes some time to process the range analysis. Please wait until the answer appears on the screen. 
+
 # Method
 
 We could split the analysing process into 3 steps. 
