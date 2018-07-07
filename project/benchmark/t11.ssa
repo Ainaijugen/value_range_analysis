@@ -7,10 +7,9 @@ foo (int i)
   int j;
   int D.1843;
   int _7;
-  int i@1;
-  int i@2;
 
   <bb 1@1>:
+  int i@1;
   int D.1841;
   int _1@1;
   int _3@1;
@@ -25,7 +24,7 @@ foo (int i)
 
   <bb 3@1>:
   _3@1 = i@1_2 + 10;
-  goto <bb 5@1>;
+  goto <bb 5@1> (<L2@1>);
 
   <bb 4@1>:
   _4@1 = 5 - i@1_2;
@@ -37,6 +36,7 @@ foo (int i)
   j_4 = _1@1;
 
   <bb 1@2>:
+  int i@2;
   int D.1841;
   int _1@2;
   int _3@2;
@@ -51,7 +51,7 @@ foo (int i)
 
   <bb 3@2>:
   _3@2 = i@2_2 + 10;
-  goto <bb 5@2>;
+  goto <bb 5@2> (<L2@2>);
 
   <bb 4@2>:
   _4@2 = 5 - i@2_2;

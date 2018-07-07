@@ -42,8 +42,9 @@ class Function:
                 if stats.find('goto ') != -1:
                     tmp_s = stats + ';'
                     while tmp_s.find('goto ') != -1:
-                        self.blocklist[bb].succ.append(tmp_s[tmp_s.find('goto ') + 5:tmp_s.find(';')])
-                        self.blocklist[tmp_s[tmp_s.find('goto ') + 5:tmp_s.find(';')]].pred.append(
+                        tmp_s = tmp_s[tmp_s.find('goto '):]
+                        self.blocklist[bb].succ.append(tmp_s[tmp_s.find('goto ') + 5:tmp_s.find('>') + 1])
+                        self.blocklist[tmp_s[tmp_s.find('goto ') + 5:tmp_s.find('>') + 1]].pred.append(
                             self.blocklist[bb].id)
                         tmp_s = tmp_s[tmp_s.find(';') + 1:]
             if self.blocklist[bb].stat[len(self.blocklist[bb].stat) - 1].find('goto') == -1:
